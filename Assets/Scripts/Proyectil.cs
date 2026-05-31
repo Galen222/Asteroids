@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class Proyectil : MonoBehaviour
 {
-
     Rigidbody rb;
 
     public float velocidad = 10;
@@ -16,7 +15,9 @@ public class Proyectil : MonoBehaviour
     public void Impulso(Vector3 direccion)
     {
         rb = GetComponent<Rigidbody>();
-        rb.AddRelativeForce(direccion * velocidad, ForceMode.Impulse);
-    }
 
+        Vector3 direccionNormalizada = direccion.normalized;
+        transform.forward = direccionNormalizada;
+        rb.linearVelocity = direccionNormalizada * velocidad;
+    }
 }

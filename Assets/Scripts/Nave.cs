@@ -101,7 +101,7 @@ public class Nave : MonoBehaviour
         if (disparo)
         {
             Vector3 posicionDisparo = cañon.position;
-            instanciaDisparo = Instantiate(prefabDisparo, posicionDisparo, Quaternion.identity);
+            instanciaDisparo = Instantiate(prefabDisparo, posicionDisparo, cañon.rotation);
 
             Proyectil proyectil = instanciaDisparo.GetComponent<Proyectil>();
             proyectil.Impulso(cañon.forward);
