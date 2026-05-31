@@ -4,39 +4,52 @@ public class ComprobacionLimites : MonoBehaviour
 {
     public float limiteZ = 10;
     public float limiteX = 18;
+    public float margen = 0.5f;
 
     public TrailRenderer MotorDerecho;
     public TrailRenderer MotorIzquierdo;
+
     void Start()
     {
-        
+        ComprobarRastreo();
     }
 
     void Update()
     {
-        
-        if (transform.position.z > limiteZ)
+        Vector2 limitesX;
+        Vector2 limitesZ;
+        LimitesPantalla.CalcularLimitesPantalla(out limitesX, out limitesZ, limiteX, limiteZ);
+
+        Vector3 posicion = transform.position;
+        bool reposicionado = false;
+
+        if (posicion.z > limitesZ.y + margen)
         {
-            transform.position = new Vector3(transform.position.x, 0, -limiteZ);
-            ComprobarRastreo();
+            posicion.z = limitesZ.x - margen;
+            reposicionado = true;
+        }
+        else if (posicion.z < limitesZ.x - margen)
+        {
+            posicion.z = limitesZ.y + margen;
+            reposicionado = true;
         }
 
-        if (transform.position.z < -limiteZ)
+        if (posicion.x > limitesX.y + margen)
         {
-            transform.position = new Vector3(transform.position.x, 0, limiteZ);
-            ComprobarRastreo();
+            posicion.x = limitesX.x - margen;
+            reposicionado = true;
+        }
+        else if (posicion.x < limitesX.x - margen)
+        {
+            posicion.x = limitesX.y + margen;
+            reposicionado = true;
         }
 
-        if (transform.position.x > limiteX)
+        if (reposicionado)
         {
-            transform.position = new Vector3(-limiteX, 0, transform.position.z);
+            posicion.y = 0f;
+            transform.position = posicion;
             ComprobarRastreo();
-        }
-
-        if (transform.position.x < -limiteX)
-        {
-            transform.position = new Vector3(limiteX, 0, transform.position.z);
-            ComprobarRastreo();            
         }
     }
 
@@ -46,6 +59,7 @@ public class ComprobacionLimites : MonoBehaviour
         {
             MotorDerecho.Clear();
         }
+
         if (MotorIzquierdo != null)
         {
             MotorIzquierdo.Clear();

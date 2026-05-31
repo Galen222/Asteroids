@@ -1,79 +1,224 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 public class UIManager : MonoBehaviour
 {
+    const int ESCENA_MENU = 0;
+    const int ESCENA_ASTEROIDS = 1;
+
     public Image vida1;
     public Image vida2;
     public Image vida3;
 
     public GameObject gameOverPanel;
+    public GameObject victoriaPanel;
+    public GameObject panelNivel;
 
-    public AudioManager audioManager;
-
+    public TextMeshProUGUI textoGameOver;
+    public TextMeshProUGUI textoVictoria;
+    public TextMeshProUGUI textoNivel;
+    public TextMeshProUGUI puntuacionGameOver;
+    public TextMeshProUGUI puntuacionVictoria;
     public TextMeshProUGUI puntuacion;
 
-    int vidas = 3;
+    public EscenaTransicion escenaTransicion;
 
-    Color transparente;
+    public float tiempoFundidoNivel = 0.75f;
+    public float tiempoTextoNivel = 1.4f;
 
-    void Start()
+    CanvasGroup canvasGroupNivel;
+
+    Color visible = Color.white;
+    Color transparente = new Color(1f, 1f, 1f, 0f);
+
+    void Awake()
     {
-        transparente = new Color (0, 0, 0, 0);
-
-    }
-
-    public void PerderVida()
-    {
-        if (vidas == 3)
+        if (panelNivel != null)
         {
-            vida3.color = transparente;
-            vidas--;
-        }
-        else
-        if (vidas == 2)
-        {
-            vida2.color = transparente;
-            vidas--;
-        }
-        else
-        if (vidas == 1)
-        {
-            vida1.color = transparente;
-            vidas--;
-        }
-
-        if (vidas == 0)
-        {
-            gameOverPanel.SetActive(true);
-            audioManager.ReproducirGameOver();
+            canvasGroupNivel = panelNivel.GetComponent<CanvasGroup>();
         }
     }
 
-    public bool QuedanVidas()
+    void Update()
     {
-        return vidas > 0;
+        ProcesarEscape();
     }
 
-    public void BotonJugarDeNuevo()
+    void ProcesarEscape()
     {
-        Invoke("RecargarEscena", 0.2f);
+        if (Input.GetKeyUp(KeyCode.Escape) && SceneManager.GetActiveScene().buildIndex == ESCENA_ASTEROIDS)
+        {
+            BotonMenu();
+        }
     }
 
-    public void BotonJugar()
+    public void ActualizarVidas(int vidas)
     {
-        Invoke("RecargarEscena", 0.2f);
+        SetVidaVisible(vida1, vidas >= 1);
+        SetVidaVisible(vida2, vidas >= 2);
+        SetVidaVisible(vida3, vidas >= 3);
     }
 
-    void RecargarEscena()
+    void SetVidaVisible(Image vida, bool mostrar)
     {
-        SceneManager.LoadScene(1);
+        if (vida != null)
+        {
+            vida.color = mostrar ? visible : transparente;
+        }
     }
 
     public void AjustarPuntuacion(int puntos)
     {
-        puntuacion.text = puntos.ToString();
+        if (puntuacion != null)
+        {
+            puntuacion.text = puntos.ToString();
+        }
+    }
+
+    public void MostrarGameOver(int puntuacionFinal)
+    {
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+        }
+
+        if (textoGameOver != null)
+        {
+            textoGameOver.text = "GAME OVER";
+        }
+
+        if (puntuacionGameOver != null)
+        {
+            puntuacionGameOver.text = "PUNTUACION " + puntuacionFinal;
+        }
+
+    }
+
+    public IEnumerator MostrarInicioNivel(int numeroNivel)
+    {
+        if (panelNivel == null || textoNivel == null)
+        {
+            yield break;
+        }
+
+        panelNivel.SetActive(true);
+        textoNivel.text = "NIVEL " + numeroNivel;
+        SetAlphaPanelNivel(1f);
+
+        yield return new WaitForSecondsRealtime(tiempoTextoNivel);
+        yield return FundidoPanelNivel(1f, 0f);
+
+        panelNivel.SetActive(false);
+        SetAlphaPanelNivel(1f);
+    }
+
+    public void PonerPantallaNegra()
+    {
+        if (escenaTransicion != null)
+        {
+            escenaTransicion.PonerPantallaNegra();
+        }
+    }
+
+    public IEnumerator FundidoANegro()
+    {
+        if (escenaTransicion != null)
+        {
+            yield return escenaTransicion.FundidoANegro();
+        }
+    }
+
+    public IEnumerator FundidoDesdeNegro()
+    {
+        if (escenaTransicion != null)
+        {
+            yield return escenaTransicion.FundidoDesdeNegro();
+        }
+    }
+
+    public void MostrarVictoria(int puntuacionFinal)
+    {
+        if (victoriaPanel != null)
+        {
+            victoriaPanel.SetActive(true);
+        }
+
+        if (textoVictoria != null)
+        {
+            textoVictoria.text = "HAS GANADO";
+        }
+
+        if (puntuacionVictoria != null)
+        {
+            puntuacionVictoria.gameObject.SetActive(true);
+            puntuacionVictoria.text = "PUNTUACION " + puntuacionFinal;
+        }
+    }
+
+    IEnumerator FundidoPanelNivel(float desde, float hasta)
+    {
+        float tiempo = 0f;
+
+        while (tiempo < tiempoFundidoNivel)
+        {
+            tiempo += Time.unscaledDeltaTime;
+            SetAlphaPanelNivel(Mathf.Lerp(desde, hasta, tiempo / tiempoFundidoNivel));
+            yield return null;
+        }
+
+        SetAlphaPanelNivel(hasta);
+    }
+
+    void SetAlphaPanelNivel(float alpha)
+    {
+        if (canvasGroupNivel != null)
+        {
+            canvasGroupNivel.alpha = alpha;
+        }
+        else if (textoNivel != null)
+        {
+            Color colorTexto = textoNivel.color;
+            colorTexto.a = alpha;
+            textoNivel.color = colorTexto;
+        }
+    }
+
+    public void BotonJugarDeNuevo()
+    {
+        CargarEscena(ESCENA_ASTEROIDS);
+    }
+
+    public void BotonJugar()
+    {
+        CargarEscena(ESCENA_ASTEROIDS);
+    }
+
+    public void BotonMenu()
+    {
+        CargarEscena(ESCENA_MENU);
+    }
+
+    void CargarEscena(int indiceEscena)
+    {
+        if (escenaTransicion != null)
+        {
+            escenaTransicion.CargarEscenaConFundido(indiceEscena);
+        }
+    }
+
+    public void BotonSalir()
+    {
+#if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }

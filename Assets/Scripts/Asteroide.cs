@@ -6,15 +6,18 @@ public class Asteroide : MonoBehaviour
     public float velocidad = 3;
     public float velocidadAngular = 3;
 
-    public AudioManager audioManager;
+    AudioManager audioManager;
 
     GameManager gameManager;
 
     public GameObject particulasExplosionPrefab;
 
+    bool destruido;
+
     void Awake()
     {
         audioManager = FindAnyObjectByType<AudioManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
     }
 
     void Start()
@@ -26,34 +29,86 @@ public class Asteroide : MonoBehaviour
 
         rb.AddForce(direccion * velocidad, ForceMode.Impulse);
         rb.AddTorque(direccionRotacion * velocidadAngular, ForceMode.Impulse);
-
-        audioManager = FindAnyObjectByType<AudioManager>();
-        gameManager = FindAnyObjectByType<GameManager>();
-        
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (destruido)
+        {
+            return;
+        }
+
         if (collision.gameObject.CompareTag("Proyectil"))
         {
-            audioManager.ReproducirExplosion();
-            gameManager.AsteroideDestruido();
-            GameObject particulasInstanciadas = Instantiate(particulasExplosionPrefab, transform.position, Quaternion.identity);
-
+            DestruirAsteroide(true);
             Destroy(collision.gameObject);
-            Destroy(gameObject);
+            return;
         }
 
         if (collision.gameObject.CompareTag("Nave"))
         {
-            audioManager.ReproducirExplosion();
-
             Nave nave = collision.gameObject.GetComponent<Nave>();
-            nave.Colision();
-            gameManager.AsteroideDestruido();
-            GameObject particulasInstanciadas = Instantiate(particulasExplosionPrefab, transform.position, Quaternion.identity);
-            Destroy(gameObject);
+
+            if (nave == null)
+            {
+                nave = collision.gameObject.GetComponentInParent<Nave>();
+            }
+
+            if (nave != null && nave.EsInvulnerable)
+            {
+                return;
+            }
+
+            if (nave != null)
+            {
+                nave.Colision();
+            }
+
+            // Si el asteroide se rompe al chocar con la nave, cuenta como asteroide eliminado
+            // para avanzar de nivel, pero NO suma puntos.
+            DestruirAsteroide(false);
         }
     }
 
+    void DestruirAsteroide(bool sumarPuntos)
+    {
+        if (destruido)
+        {
+            return;
+        }
+
+        destruido = true;
+
+        ReproducirExplosionSegura();
+
+        if (gameManager == null)
+        {
+            gameManager = FindAnyObjectByType<GameManager>();
+        }
+
+        if (gameManager != null)
+        {
+            gameManager.AsteroideDestruido(sumarPuntos);
+        }
+
+        if (particulasExplosionPrefab != null)
+        {
+            Instantiate(particulasExplosionPrefab, transform.position, Quaternion.identity);
+        }
+
+        Destroy(gameObject);
+    }
+
+    void ReproducirExplosionSegura()
+    {
+        if (audioManager == null)
+        {
+            audioManager = FindAnyObjectByType<AudioManager>();
+        }
+
+        if (audioManager != null)
+        {
+            audioManager.ReproducirExplosion();
+        }
+    }
 }
