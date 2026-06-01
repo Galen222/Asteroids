@@ -98,7 +98,6 @@ public class UIManager : MonoBehaviour
         {
             puntuacionGameOver.text = "PUNTUACION " + puntuacionFinal;
         }
-
     }
 
     public IEnumerator MostrarInicioNivel(int numeroNivel)
